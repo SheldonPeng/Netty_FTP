@@ -1,6 +1,7 @@
 package com.sheldon.server.handler;
 
 
+import ch.qos.logback.core.net.server.Client;
 import com.sheldon.factory.file.FileFactory;
 import com.sheldon.factory.port.PortFactory;
 import com.sheldon.model.FtpCommand;
@@ -9,16 +10,16 @@ import com.sheldon.model.FtpState;
 import com.sheldon.model.ResponseEnum;
 import com.sheldon.server.supervise.ClientSupervise;
 import com.sheldon.util.ByteBufUtil;
-import io.netty.channel.ChannelHandler;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.*;
 import io.netty.handler.codec.string.LineSeparator;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.concurrent.ExecutionException;
@@ -52,6 +53,15 @@ public class CommandProcessHandler extends ChannelInboundHandlerAdapter {
             // 处理OPTS命令
             case OPTS: {
                 ctx.writeAndFlush(ResponseEnum.OPTS_SUCCESS_OK.toString());
+                break;
+            }
+            // 当前系统信息
+            case SYST:{
+                ctx.writeAndFlush(ResponseEnum.CONN_SUCCESS_WC.toString());
+                break;
+            }
+            case TYPE:{
+                type(ctx,command);
                 break;
             }
             // 改变当前目录
@@ -97,9 +107,86 @@ public class CommandProcessHandler extends ChannelInboundHandlerAdapter {
                 dele(ctx,command);
                 break;
             }
+            // 返回文件大小
+            case SIZE:{
 
+                size(ctx,command);
+                break;
+            }
+            // 下载文件
+            case RETR:{
+                retr(ctx,command);
+                break;
+            }
+            // 退出
+            case QUIT:{
+                ctx.close();
+                break;
+            }
         }
 
+    }
+
+    private void retr(ChannelHandlerContext ctx, FtpCommand ftpCommand) throws IOException, InterruptedException, ExecutionException {
+
+        String param = ftpCommand.getParams().get(0);
+        FtpSession session = ClientSupervise.getSession(ctx.channel().id());
+        String filePath;
+        if ( session.getFtpState().getState() < FtpState.READY_TRANSFORM){
+            ctx.writeAndFlush(ResponseEnum.UNIDENTIFY_CONNECTION.toString());
+            return;
+        }
+        if ( param.startsWith("/") ){
+            filePath = fileFactory.getRootPath() + param;
+        } else {
+            filePath = session.getPresentFile() + param;
+        }
+        File file = new File(filePath);
+        if( ! file.exists() || file.isDirectory()){
+            ctx.writeAndFlush(ResponseEnum.FILE_NOT_INVALID.toString());
+            return;
+        }
+        ctx.writeAndFlush(ResponseEnum.DATA_CONNECTION_OK.toString());
+        RandomAccessFile randomAccessFile = new RandomAccessFile(file,"rw");
+        FileRegion fileRegion = new DefaultFileRegion(randomAccessFile.getChannel(),0,randomAccessFile.length());
+        session.getCtx().writeAndFlush(fileRegion);
+
+        session.getCtx().close().sync().get();
+        session.getFtpState().setState(FtpState.USER_LOGGED);
+        ctx.writeAndFlush(ResponseEnum.TRANSFER_COMPLETE.toString());
+    }
+
+    private void size(ChannelHandlerContext ctx, FtpCommand ftpCommand) {
+
+        String parm = ftpCommand.getParams().get(0);
+        FtpSession session = ClientSupervise.getSession(ctx.channel().id());
+        String sizePath;
+
+        if ( parm.startsWith("/")){
+            sizePath = fileFactory.getRootPath() + parm;
+        } else {
+            sizePath = session.getPresentFile() + parm;
+        }
+        File file = new File(sizePath);
+
+        if ( ! file.exists() || file.isDirectory()){
+            ctx.writeAndFlush(ResponseEnum.SIZE_DENY.toString());
+            return;
+
+        }
+        String size = String.valueOf(file.length());
+        ctx.writeAndFlush(ResponseEnum.SIZE_ACCEPT.toString().replace("{}",size));
+    }
+
+    private void type(ChannelHandlerContext ctx, FtpCommand ftpCommand) {
+
+        if ( ftpCommand.getParams().get(0).equals("I")){
+            ctx.writeAndFlush(ResponseEnum.TYPE_SUCCESS.toString() + "I");
+        } else if(ftpCommand.getParams().get(0).equals("A")){
+            ctx.writeAndFlush(ResponseEnum.TYPE_SUCCESS.toString() + "A");
+        } else {
+            ctx.writeAndFlush(ResponseEnum.INVALID_COMMAND.toString());
+        }
     }
 
     private void dele(ChannelHandlerContext ctx, FtpCommand ftpCommand) {
@@ -128,6 +215,11 @@ public class CommandProcessHandler extends ChannelInboundHandlerAdapter {
         final String param = ftpCommand.getParams().get(0);
         String rmdPath;
 
+        // 防止根目录被删除
+        if ( param.equals("/")){
+            ctx.writeAndFlush(ResponseEnum.INVALID_COMMAND.toString());
+            return;
+        }
         if ( param.startsWith("/")){
             rmdPath = fileFactory.getRootPath() + param;
         } else {
@@ -141,7 +233,6 @@ public class CommandProcessHandler extends ChannelInboundHandlerAdapter {
         ctx.writeAndFlush(ResponseEnum.DELETE_DIRECTORY_SUCCESS.toString());
 
     }
-
 
     private void xmkd(ChannelHandlerContext ctx, FtpCommand ftpCommand) {
 
@@ -209,7 +300,6 @@ public class CommandProcessHandler extends ChannelInboundHandlerAdapter {
         ctx.writeAndFlush(ResponseEnum.TRANSFER_COMPLETE.toString());
     }
 
-
     private void xpwd(ChannelHandlerContext ctx) {
 
         FtpSession session = ClientSupervise.getSession(ctx.channel().id());
@@ -225,7 +315,7 @@ public class CommandProcessHandler extends ChannelInboundHandlerAdapter {
             // 去除尾部的"/"
             path = path.substring(0, path.length() - 1);
         }
-        ctx.writeAndFlush(ResponseEnum.CURRENT_FILE.toString() + path);
+        ctx.writeAndFlush(ResponseEnum.CURRENT_FILE.toString().replace("{}",path));
     }
 
     private void cwd(ChannelHandlerContext ctx, FtpCommand ftpCommand) throws IOException {

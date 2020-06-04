@@ -6,6 +6,10 @@ public enum RequestEnum {
 
     // OPTS
     OPTS("OPTS",3),
+    SYST("SYST",1),
+
+    // 当前文件大小
+    SIZE("SIZE",2),
     // 密码
     PASS("PASS",2),
     // 用户名
@@ -16,6 +20,8 @@ public enum RequestEnum {
     // 进入指定路径  对应客户端 cd命令
     CWD("CWD",2),
 
+    // 两种模式 Binary和Ascii  type i和type a
+    TYPE("TYPE",2),
     // 创建文件夹
     XMKD("XMKD",1),
     MKD("MKD",1),
@@ -30,10 +36,15 @@ public enum RequestEnum {
     LIST("LIST",1),
     // 当前目录下的所有文件的列表信息，对应客户端 ls命令
     NLST("NLST",1),
+    // 下载文件
+    RETR("RETR",2),
     // 主动模式
     PORT("PORT",2),
     // 被动模式
-    PASV("PASV",2);
+    PASV("PASV",2),
+    // 退出
+    QUIT("QUIT",1);
+
     
     
     private final String command;
