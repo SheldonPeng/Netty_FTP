@@ -1,0 +1,4 @@
+ftp:
+  users: {"admin": "admin","root": "root" , "123456": "123456"}
+  root: "root"
+
