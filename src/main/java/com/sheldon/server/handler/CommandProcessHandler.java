@@ -10,6 +10,7 @@ import com.sheldon.model.FtpState;
 import com.sheldon.model.ResponseEnum;
 import com.sheldon.server.supervise.ClientSupervise;
 import com.sheldon.util.ByteBufUtil;
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.*;
 import io.netty.handler.codec.string.LineSeparator;
 import lombok.extern.log4j.Log4j2;
@@ -118,6 +119,10 @@ public class CommandProcessHandler extends ChannelInboundHandlerAdapter {
                 retr(ctx,command);
                 break;
             }
+            case STOR:{
+                stor(ctx,command);
+                break;
+            }
             // 退出
             case QUIT:{
                 ctx.close();
@@ -125,6 +130,31 @@ public class CommandProcessHandler extends ChannelInboundHandlerAdapter {
             }
         }
 
+    }
+
+    private void stor(ChannelHandlerContext ctx, FtpCommand ftpCommand) {
+
+        FtpSession session = ClientSupervise.getSession(ctx.channel().id());
+        if ( session.getFtpState().getState() < FtpState.READY_TRANSFORM){
+            ctx.writeAndFlush(ResponseEnum.UNIDENTIFY_CONNECTION.toString());
+            return;
+        }
+        String param = ftpCommand.getParams().get(0);
+        String filePath;
+
+        if ( param.startsWith("/")){
+            filePath = fileFactory.getRootPath() + param;
+        } else {
+            filePath = session.getPresentFile() + param;
+        }
+
+        File file = new File(filePath);
+        if( file.exists() || file.isDirectory()){
+            ctx.writeAndFlush(ResponseEnum.UPLOAD_FAIL.toString());
+            return;
+        }
+        session.getFtpState().setData(file);
+        ctx.writeAndFlush(ResponseEnum.DATA_CONNECTION_OK.toString());
     }
 
     private void retr(ChannelHandlerContext ctx, FtpCommand ftpCommand) throws IOException, InterruptedException, ExecutionException {

@@ -1,5 +1,6 @@
 package com.sheldon.factory.port;
 
+import com.sheldon.factory.port.handler.PortHandler;
 import com.sheldon.model.FtpCommand;
 import com.sheldon.model.FtpSession;
 import com.sheldon.model.FtpState;
@@ -38,17 +39,8 @@ public class PortFactory {
         String ip = params[0] + "." + params[1] + "." + params[2] + "." + params[3];
         int port = Integer.parseInt(params[4]) * 256 + Integer.parseInt(params[5]);
 
-        // 获取用户FTP状态
-        final FtpSession session = ClientSupervise.getSession(ctx.channel().id());
-        portBootstrap.handler(new ChannelInboundHandlerAdapter() {
-            @Override
-            public void channelActive(ChannelHandlerContext channelHandlerContext) throws Exception {
-                log.info("PORT模式：成功连接至【{}:{}】",ip,port);
-                session.setCtx(channelHandlerContext);
-                session.getFtpState().setState(FtpState.READY_TRANSFORM);
-                ctx.writeAndFlush(ResponseEnum.PORT_OK.toString());
-            }
-        });
+        // 添加port模式逻辑处理器
+        portBootstrap.handler(new PortHandler(ctx));
         // 连接至客户端
         portBootstrap.connect(ip, port);
     }

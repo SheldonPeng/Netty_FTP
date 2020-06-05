@@ -24,6 +24,7 @@ public enum ResponseEnum {
     FILE_ALREADY_EXISTS("550","Create File error ! File Already Exists"),
     DELETE_DIRECTORY_FAIL("550","Delete Fail! The File is not a directory"),
     DELETE_FILE_FAIL("550","Delete Fail! The File is a directory"),
+    UPLOAD_FAIL("550","File System Denied!"),
     FILE_NOT_INVALID("550", "File not invalid");
 
     private final String code;

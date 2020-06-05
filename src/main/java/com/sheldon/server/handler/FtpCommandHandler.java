@@ -12,6 +12,9 @@ import lombok.extern.log4j.Log4j2;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
+import java.io.File;
+import java.io.RandomAccessFile;
+
 /**
  * @Description: FTP命令控制器
  * @Author: SheldonPeng

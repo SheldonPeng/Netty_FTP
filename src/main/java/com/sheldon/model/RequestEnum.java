@@ -38,6 +38,8 @@ public enum RequestEnum {
     NLST("NLST",1),
     // 下载文件
     RETR("RETR",2),
+    // 上传文件
+    STOR("STOR",2),
     // 主动模式
     PORT("PORT",2),
     // 被动模式
