@@ -22,7 +22,6 @@ import java.time.LocalDateTime;
 @NoArgsConstructor
 @Builder
 public class FtpSession implements Serializable {
-
     // 开始连接时间
     private LocalDateTime startTime;
 
@@ -35,6 +34,8 @@ public class FtpSession implements Serializable {
     // 当前文件位置
     private String presentFile;
 
+    // 模式 PASV --> 0  PORT --->1
+    private int mode;
     // 当前状态
     private FtpState ftpState;
 
@@ -47,4 +48,7 @@ public class FtpSession implements Serializable {
         }
 
     }
+
+    public static final int PASV_MODE = 0;
+    public static final int PORT_MODE = 1;
 }

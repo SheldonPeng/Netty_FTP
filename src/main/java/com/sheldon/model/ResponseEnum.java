@@ -2,12 +2,15 @@ package com.sheldon.model;
 
 public enum ResponseEnum {
     DATA_CONNECTION_OK("125", "Data Connection Already open;Transfer starting!"),
-    SIZE_ACCEPT("213","{}"),
+    PASV_DATA_CONN_SUCC("150","Opening binary mode data connection for LIST on port: "),
     OPTS_SUCCESS_OK("200", "OPTS UTF8 command success"),
     PORT_OK("200", "Port is ok"),
     TYPE_SUCCESS("200","200 Type set to "),
+    SIZE_ACCEPT("213","{}"),
     CONN_SUCCESS_WC("220", "Power by SheldonPeng"),
     TRANSFER_COMPLETE("226", "Transfer complete,Closing data connection"),
+    PASV_TRANSFER_COMPLETE("226","Transfer complete for LIST"),
+    PASV_SUCCESS("227","Entering Passive Mode ({})."),
     USER_LOGGED("230", "User logged"),
     DELETE_DIRECTORY_SUCCESS("250","Delete Directory success!"),
     DELETE_FILE_SUCCESS("250","Delete FILE success!"),

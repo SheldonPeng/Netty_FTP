@@ -43,7 +43,7 @@ public enum RequestEnum {
     // 主动模式
     PORT("PORT",2),
     // 被动模式
-    PASV("PASV",2),
+    PASV("PASV",1),
     // 退出
     QUIT("QUIT",1);
 

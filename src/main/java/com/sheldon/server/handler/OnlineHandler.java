@@ -54,7 +54,8 @@ public class OnlineHandler extends ChannelInboundHandlerAdapter {
         // 移除客户端连接池
         ClientSupervise.removeClient(ctx.channel().id());
         ctx.writeAndFlush(ResponseEnum.CONN_SUCCESS_WC.toString());
+        ctx.close().sync().get();
         log.info("客户端下线成功!");
-        ctx.fireChannelInactive();
+
     }
 }

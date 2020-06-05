@@ -23,7 +23,7 @@ import java.io.RandomAccessFile;
 @Log4j2
 public class PortHandler extends ChannelInboundHandlerAdapter {
 
-    private ChannelHandlerContext ctx;
+    private final ChannelHandlerContext ctx;
 
     public PortHandler(ChannelHandlerContext ctx){
         this.ctx = ctx;
@@ -35,22 +35,34 @@ public class PortHandler extends ChannelInboundHandlerAdapter {
         final FtpSession session = ClientSupervise.getSession(ctx.channel().id());
         log.info("PORT模式：成功连接至【{}】",childCtx.channel().remoteAddress());
         session.setCtx(childCtx);
+        // 调整用户当前的状态
         session.getFtpState().setState(FtpState.READY_TRANSFORM);
+        // 告知客户端port模式连接成功
         ctx.writeAndFlush(ResponseEnum.PORT_OK.toString());
     }
 
     @Override
     public void channelRead(ChannelHandlerContext childCtx, Object msg) throws Exception {
 
+        // 获取用户信息
         final FtpSession session = ClientSupervise.getSession(ctx.channel().id());
         log.info("接收到【{}】的上传指令",session.getId());
+        // 接收文件，并写入服务端文件夹内
         ByteBuf byteBuf = (ByteBuf) msg;
         File file = (File) session.getFtpState().getData();
-        RandomAccessFile accessFile = new RandomAccessFile(file,"rw");
-        accessFile.getChannel().write(byteBuf.nioBuffer());
-        byteBuf.clear();
-        log.info("完成文件上传任务，文件名称为:{}",file.getName());
-        ctx.writeAndFlush(ResponseEnum.TRANSFER_COMPLETE.toString());
-        childCtx.close();
+        if( file != null ){
+
+            RandomAccessFile accessFile = new RandomAccessFile(file,"rw");
+            accessFile.getChannel().write(byteBuf.nioBuffer());
+            // 清除缓存
+            byteBuf.clear();
+            log.info("完成文件上传任务，文件名称为:{}",file.getName());
+            // 告知客户端接收完毕
+            ctx.writeAndFlush(ResponseEnum.TRANSFER_COMPLETE.toString());
+            childCtx.close();
+            return;
+        }
+        ctx.writeAndFlush(ResponseEnum.UPLOAD_FAIL.toString());
+
     }
 }

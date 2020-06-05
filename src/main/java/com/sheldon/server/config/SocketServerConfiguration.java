@@ -52,7 +52,7 @@ public class SocketServerConfiguration {
     @Bean(name = "serverBootstrap")
     public ServerBootstrap bootstrap() {
         ServerBootstrap bootstrap = new ServerBootstrap();
-        bootstrap.group(boosGroup(), workerGroup())
+        bootstrap.group(bossGroup(), workerGroup())
                 .channel(NioServerSocketChannel.class)
                 .handler(new LoggingHandler(LogLevel.DEBUG))
                 .childHandler(initializer);
@@ -74,7 +74,7 @@ public class SocketServerConfiguration {
         return bootstrap;
     }
     @Bean(name = "bossGroup", destroyMethod = "shutdownGracefully")
-    public NioEventLoopGroup boosGroup() {
+    public NioEventLoopGroup bossGroup() {
         return new NioEventLoopGroup(bossCount);
     }
 

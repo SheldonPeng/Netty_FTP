@@ -16,6 +16,7 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
+import java.util.Locale;
 
 /**
  * @Description: 文件初始化器
@@ -72,8 +73,8 @@ public class FileFactory {
         return stringBuilder.toString();
     }
 
-    public String getDetailInfo(String path) throws IOException {
 
+    public String getDetailInfo(String path) throws IOException {
         File file = new File(path);
         File[] files = file.listFiles();
         StringBuilder stringBuilder = new StringBuilder();
@@ -83,18 +84,18 @@ public class FileFactory {
             BasicFileAttributeView fileAttributeView = Files.getFileAttributeView(childPath, BasicFileAttributeView.class);
             BasicFileAttributes basicFileAttributes = fileAttributeView.readAttributes();
             LocalDateTime localDateTime = LocalDateTime.ofInstant(basicFileAttributes.lastModifiedTime().toInstant(), ZoneId.systemDefault());
-            DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("yyyy-MM-dd   HH:mm:ss");
+            DateTimeFormatter dateTimeFormatter = DateTimeFormatter.ofPattern("MM-dd-yy  HH:mma", Locale.ENGLISH);
             stringBuilder.append(localDateTime.format(dateTimeFormatter));
-            stringBuilder.append("\t");
+            stringBuilder.append("       ");
             if ( basicFileAttributes.isDirectory()){
                 stringBuilder.append("<DIR>");
-                stringBuilder.append("\t");
+                stringBuilder.append("\t\t");
             }else {
                 stringBuilder.append("     ");
-                stringBuilder.append("\t");
+                stringBuilder.append("\t\t");
                 stringBuilder.append(basicFileAttributes.size());
             }
-            stringBuilder.append("\t");
+            stringBuilder.append("\t\t");
             stringBuilder.append(childFile.getName());
             stringBuilder.append(LineSeparator.WINDOWS.value());
         }
