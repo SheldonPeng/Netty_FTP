@@ -25,7 +25,7 @@ public class SocketInitializer extends ChannelInitializer<SocketChannel> {
     @Autowired
     private StringCrEncoder crEncoder;
     @Autowired
-    private StringDecoder decoder;
+    private StringDecoder utf8StringDecoder;
     @Autowired
     private OnlineHandler onlineHandler;
     @Autowired
@@ -50,7 +50,7 @@ public class SocketInitializer extends ChannelInitializer<SocketChannel> {
         channel.pipeline()
                 .addLast(crEncoder)
                 .addLast(getLineBasedFrameDecoder())
-                .addLast(decoder)
+                .addLast("utf8Decoder",utf8StringDecoder)
                 .addLast(onlineHandler)
                 .addLast(ftpCommandHandler)
                 .addLast(loginHandler)

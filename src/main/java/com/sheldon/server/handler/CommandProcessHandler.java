@@ -14,6 +14,7 @@ import com.sheldon.util.ByteBufUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.*;
 import io.netty.handler.codec.string.LineSeparator;
+import io.netty.handler.codec.string.StringDecoder;
 import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
@@ -52,6 +53,10 @@ public class CommandProcessHandler extends ChannelInboundHandlerAdapter {
     private PortFactory portFactory;
     @Autowired
     private PasvFactory pasvFactory;
+    @Autowired
+    private StringDecoder gbkStringDecoder;
+    @Autowired
+    private StringDecoder utf8StringDecoder;
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
@@ -62,7 +67,7 @@ public class CommandProcessHandler extends ChannelInboundHandlerAdapter {
 
             // 处理OPTS命令
             case OPTS: {
-                ctx.writeAndFlush(ResponseEnum.OPTS_SUCCESS_OK.toString());
+                opts(ctx,command);
                 break;
             }
             // 当前系统信息
@@ -90,7 +95,7 @@ public class CommandProcessHandler extends ChannelInboundHandlerAdapter {
                 portFactory.connect(ctx, command.getParams().get(0));
                 // 设置当前模式为被动模式
                 FtpSession session = ClientSupervise.getSession(ctx.channel().id());
-                session.setMode(FtpSession.PASV_MODE);
+                session.setMode(FtpSession.PORT_MODE);
                 break;
             }
             // 当前目录文件概述信息
@@ -162,6 +167,33 @@ public class CommandProcessHandler extends ChannelInboundHandlerAdapter {
                 break;
             }
         }
+
+    }
+
+    private void opts(ChannelHandlerContext ctx, FtpCommand ftpCommand) {
+
+        String param = ftpCommand.getParams().get(1).toUpperCase();
+        // 打开UTF8模式
+        if( param.equals("ON")){
+
+            log.info(1);
+            // 不存在utf8解码器，将其替换为
+            if ( ctx.pipeline().get("gbkDecoder") != null){
+
+                log.info(2);
+                ctx.pipeline().replace("gbkDecoder","utf8Decoder",utf8StringDecoder);
+            }
+        // 关闭UTF8模式
+        } else {
+
+            log.info(3);
+            // 存在utf8解码器，将其替换成gbk
+            if( ctx.pipeline().get("utf8Decoder") != null ){
+                log.info(4);
+                ctx.pipeline().replace("utf8Decoder","gbkDecoder",gbkStringDecoder);
+            }
+        }
+        ctx.writeAndFlush(ResponseEnum.OPTS_SUCCESS_OK.toString());
 
     }
 
@@ -302,7 +334,6 @@ public class CommandProcessHandler extends ChannelInboundHandlerAdapter {
         //  关闭数据客户端，并且告知客户端数据端口已被关闭
         session.getCtx().close().sync().get();
         session.getFtpState().setState(FtpState.USER_LOGGED);
-        ctx.writeAndFlush(ResponseEnum.TRANSFER_COMPLETE.toString());
     }
 
     private void size(ChannelHandlerContext ctx, FtpCommand ftpCommand) {
@@ -426,7 +457,6 @@ public class CommandProcessHandler extends ChannelInboundHandlerAdapter {
             session.getCtx().channel().writeAndFlush(ByteBufUtil.parse(fileInfo))
                                       .sync()
                                       .get();
-            ctx.writeAndFlush(ResponseEnum.TRANSFER_COMPLETE.toString());
 
         // 当用户属于被动模式
         } else {
@@ -449,8 +479,6 @@ public class CommandProcessHandler extends ChannelInboundHandlerAdapter {
             session.getCtx().channel().writeAndFlush(ByteBufUtil.parse(fileInfo))
                                       .sync()
                                       .get();
-            //通知客户端关闭
-            ctx.writeAndFlush(ResponseEnum.PASV_TRANSFER_COMPLETE.toString());
         }
         // 关闭连接通道
         session.getFtpState().setState(FtpState.USER_LOGGED);
@@ -475,7 +503,6 @@ public class CommandProcessHandler extends ChannelInboundHandlerAdapter {
         // 关闭连接通道，并通知客户端关闭
         session.getCtx().close().sync().get();
         session.getFtpState().setState(FtpState.USER_LOGGED);
-        ctx.writeAndFlush(ResponseEnum.TRANSFER_COMPLETE.toString());
     }
 
     private void xpwd(ChannelHandlerContext ctx) {

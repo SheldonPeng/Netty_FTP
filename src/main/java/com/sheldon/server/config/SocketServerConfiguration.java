@@ -19,6 +19,7 @@ import org.springframework.context.annotation.PropertySource;
 import org.springframework.context.annotation.Scope;
 
 import java.net.InetSocketAddress;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
@@ -104,10 +105,15 @@ public class SocketServerConfiguration {
         return options;
     }
 
-    @Bean(name = "stringDecoder")
-    public StringDecoder stringDecoder() {
+    @Bean(name = "utf8StringDecoder")
+    public StringDecoder utf8StringDecoder() {
         return new StringDecoder(StandardCharsets.UTF_8);
     }
+    @Bean(name = "gbkStringDecoder")
+    public StringDecoder gbkStringDecoder(){
+        return new StringDecoder(Charset.forName("GBK"));
+    }
+
 
     @Bean(name = "lineBasedFrameDecoder")
     @Scope("prototype")

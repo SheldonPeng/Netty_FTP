@@ -50,16 +50,19 @@ public class PortHandler extends ChannelInboundHandlerAdapter {
         log.info("接收到【{}】的上传指令",session.getId());
         // 接收文件，并写入服务端文件夹内
         ByteBuf byteBuf = (ByteBuf) msg;
-        File file = (File) session.getFtpState().getData();
-        if( file != null ){
 
-            ByteBufUtil.receiveFile(byteBuf,file);
-            // 告知客户端接收完毕
-            ctx.writeAndFlush(ResponseEnum.TRANSFER_COMPLETE.toString());
-            childCtx.close();
+        if( session.getFtpState().getData() != null ){
+
+            ByteBufUtil.receiveFile(byteBuf,session);
             return;
         }
         ctx.writeAndFlush(ResponseEnum.UPLOAD_FAIL.toString());
 
+    }
+
+    @Override
+    public void channelInactive(ChannelHandlerContext childCtx) throws Exception {
+        log.info(childCtx.channel().remoteAddress() + "完成数据传输操作，已关闭连接通道！");
+        ctx.writeAndFlush(ResponseEnum.TRANSFER_COMPLETE.toString());
     }
 }
