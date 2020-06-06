@@ -20,6 +20,10 @@ public enum RequestEnum {
     // 进入指定路径  对应客户端 cd命令
     CWD("CWD",2),
 
+    // 将文件重命名指定的旧文件
+    RNFR("RNFR",2),
+    // 重命名指定的新文件
+    RNTO("RNTO",2),
     // 两种模式 Binary和Ascii  type i和type a
     TYPE("TYPE",2),
     // 创建文件夹

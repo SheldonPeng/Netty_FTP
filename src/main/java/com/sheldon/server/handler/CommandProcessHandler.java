@@ -131,16 +131,29 @@ public class CommandProcessHandler extends ChannelInboundHandlerAdapter {
                 retr(ctx, command);
                 break;
             }
+            //上传文件
             case STOR: {
                 stor(ctx, command);
                 break;
             }
+            // 进入被动模式
             case PASV: {
                 pasv(ctx);
                 break;
             }
+            // 空指令
             case NOOP:{
                 ctx.writeAndFlush(ResponseEnum.NOOP_OK.toString());
+                break;
+            }
+            // 重命名指定的旧文件
+            case RNFR:{
+                rnfr(ctx,command);
+                break;
+            }
+            // 重命名指定的新文件
+            case RNTO:{
+                rnto(ctx,command);
                 break;
             }
             // 退出
@@ -150,6 +163,63 @@ public class CommandProcessHandler extends ChannelInboundHandlerAdapter {
             }
         }
 
+    }
+
+    private void rnto(ChannelHandlerContext ctx, FtpCommand ftpCommand) {
+
+        FtpSession session = ClientSupervise.getSession(ctx.channel().id());
+        String parm = ftpCommand.getParams().get(0);
+        String newPath;
+
+        // 读取参数信息，获取新文件路径
+        if ( parm.startsWith("/")){
+            newPath = fileFactory.getRootPath() + parm;
+        } else {
+            newPath =  session.getPresentFile() + parm;
+        }
+        // 判断新文件是否已经存在了，若存在了则修改失败
+        File newFile = new File(newPath);
+        if( newFile.exists()){
+            ctx.writeAndFlush(ResponseEnum.FILE_ALREADY_EXISTS.toString());
+            return;
+        }
+        // 从临时去中读取旧文件信息
+        File oldFile = (File) session.getFtpState().getData();
+        if ( oldFile == null ){
+            ctx.writeAndFlush(ResponseEnum.INVALID_COMMAND.toString());
+            return;
+        }
+        // 重名文件
+        if ( oldFile.renameTo(newFile)){
+            ctx.writeAndFlush(ResponseEnum.RENAME_SUCCESS.toString());
+        } else{
+           ctx.writeAndFlush(ResponseEnum.INVALID_COMMAND.toString());
+        }
+        // 及时回收资源
+        session.getFtpState().setData(null);
+
+    }
+
+    private void rnfr(ChannelHandlerContext ctx, FtpCommand ftpCommand) {
+
+        String parm = ftpCommand.getParams().get(0);
+        FtpSession session = ClientSupervise.getSession(ctx.channel().id());
+
+        String path;
+        if ( parm.startsWith("/")){
+
+            path = fileFactory.getRootPath() + parm;
+
+        } else {
+             path =  session.getPresentFile() + parm;
+        }
+
+        File file = new File(path);
+        if(! file.exists() ){
+            ctx.writeAndFlush(ResponseEnum.FILE_NOT_INVALID.toString());
+        }
+        session.getFtpState().setData(file);
+        ctx.writeAndFlush(ResponseEnum.RNFR_SUCCESS.toString());
     }
 
     private void pasv(ChannelHandlerContext ctx) throws UnknownHostException, InterruptedException, ExecutionException {

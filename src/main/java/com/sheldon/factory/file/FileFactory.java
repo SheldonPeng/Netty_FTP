@@ -95,7 +95,7 @@ public class FileFactory {
                 stringBuilder.append("\t\t");
                 stringBuilder.append(basicFileAttributes.size());
             }
-            stringBuilder.append("\t\t");
+            stringBuilder.append(" ");
             stringBuilder.append(childFile.getName());
             stringBuilder.append(LineSeparator.WINDOWS.value());
         }

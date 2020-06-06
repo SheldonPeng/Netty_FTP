@@ -43,7 +43,7 @@ public class PasvHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelRead(ChannelHandlerContext childCtx, Object msg) throws Exception {
-
+        
         // 获取用户信息
         final FtpSession session = ClientSupervise.getSession(ctx.channel().id());
         log.info("接收到【{}】的上传指令",session.getId());
