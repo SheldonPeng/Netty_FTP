@@ -4,6 +4,7 @@ import com.sheldon.model.FtpSession;
 import com.sheldon.model.FtpState;
 import com.sheldon.model.ResponseEnum;
 import com.sheldon.server.supervise.ClientSupervise;
+import com.sheldon.util.ByteBufUtil;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
@@ -52,11 +53,7 @@ public class PortHandler extends ChannelInboundHandlerAdapter {
         File file = (File) session.getFtpState().getData();
         if( file != null ){
 
-            RandomAccessFile accessFile = new RandomAccessFile(file,"rw");
-            accessFile.getChannel().write(byteBuf.nioBuffer());
-            // 清除缓存
-            byteBuf.clear();
-            log.info("完成文件上传任务，文件名称为:{}",file.getName());
+            ByteBufUtil.receiveFile(byteBuf,file);
             // 告知客户端接收完毕
             ctx.writeAndFlush(ResponseEnum.TRANSFER_COMPLETE.toString());
             childCtx.close();

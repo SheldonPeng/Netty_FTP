@@ -26,6 +26,8 @@ public enum RequestEnum {
     XMKD("XMKD",1),
     MKD("MKD",1),
 
+    // 空指令
+    NOOP("NOOP",1),
     // 删除目录
     XRMD("XRMD",1),
     RMD("RMD",1),
@@ -58,6 +60,7 @@ public enum RequestEnum {
 
     public static int getMinLength(String command){
 
+        command = command.toUpperCase();
         for(RequestEnum requestEnum : values()){
             if ( requestEnum.command.equals(command)){
                 return requestEnum.minLength;
@@ -68,6 +71,7 @@ public enum RequestEnum {
 
     public static RequestEnum getCommand(String command){
 
+        command = command.toUpperCase();
         for(RequestEnum requestEnum : values()){
             if ( requestEnum.command.equals(command)){
                 return requestEnum;

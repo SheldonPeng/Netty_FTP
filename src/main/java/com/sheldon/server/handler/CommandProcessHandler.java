@@ -53,9 +53,6 @@ public class CommandProcessHandler extends ChannelInboundHandlerAdapter {
     @Autowired
     private PasvFactory pasvFactory;
 
-    private static final int CORE_COUNT = Runtime.getRuntime().availableProcessors();
-    private static ThreadPoolExecutor bizThreadPool = new ThreadPoolExecutor(CORE_COUNT, CORE_COUNT, 0L, TimeUnit.SECONDS, new ArrayBlockingQueue<>(1024));
-
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         log.info(msg.toString());
@@ -142,6 +139,10 @@ public class CommandProcessHandler extends ChannelInboundHandlerAdapter {
                 pasv(ctx);
                 break;
             }
+            case NOOP:{
+                ctx.writeAndFlush(ResponseEnum.NOOP_OK.toString());
+                break;
+            }
             // 退出
             case QUIT: {
                 ctx.close();
@@ -172,17 +173,16 @@ public class CommandProcessHandler extends ChannelInboundHandlerAdapter {
         ctx.writeAndFlush(ResponseEnum.PASV_SUCCESS.toString().replace("{}", hostAddress));
     }
 
-    private void stor(ChannelHandlerContext ctx, FtpCommand ftpCommand) {
+    private void stor(ChannelHandlerContext ctx, FtpCommand ftpCommand) throws InterruptedException {
 
         // 获取用户的信息，并且判断用户是否已打开连接
         FtpSession session = ClientSupervise.getSession(ctx.channel().id());
-        if (session.getFtpState().getState() < FtpState.READY_TRANSFORM) {
-            ctx.writeAndFlush(ResponseEnum.UNIDENTIFY_CONNECTION.toString());
-            return;
-        }
+        // 检查客户端连接模式为Port还是Pasv
+        checkMode(ctx);
+
+        // 获取文件路径
         String param = ftpCommand.getParams().get(0);
         String filePath;
-
         // 判断文件是相对路径还是绝对路径
         if (param.startsWith("/")) {
             filePath = fileFactory.getRootPath() + param;
@@ -207,31 +207,8 @@ public class CommandProcessHandler extends ChannelInboundHandlerAdapter {
         String param = ftpCommand.getParams().get(0);
         FtpSession session = ClientSupervise.getSession(ctx.channel().id());
         String filePath;
-        // 判断是否打开PORT模式
-        if ( session.getMode() == FtpSession.PORT_MODE){
-            // 判断用户是否已经准备好传输
-            if (session.getFtpState().getState() < FtpState.READY_TRANSFORM) {
-                ctx.writeAndFlush(ResponseEnum.UNIDENTIFY_CONNECTION.toString());
-                return;
-            }
-
-        // 当用户的传输模式为PASV
-        } else {
-
-            // 用于计数，防止死循环卡死
-            int count = 0;
-            // 判断用户是否准备好PASV模式的连接
-            while (session.getFtpState().getState() != FtpState.READY_TRANSFORM) {
-                if( count > 10 ){
-                    ctx.writeAndFlush(ResponseEnum.UNIDENTIFY_CONNECTION.toString());
-                    return;
-                }
-                Thread.sleep(100);
-                count++;
-            }
-
-        }
-
+        // 检查客户端连接模式为Port还是Pasv
+        checkMode(ctx);
         // 获取文件路径，判断文件路径是绝对路径还是相对路径
         if (param.startsWith("/")) {
             filePath = fileFactory.getRootPath() + param;
@@ -483,4 +460,32 @@ public class CommandProcessHandler extends ChannelInboundHandlerAdapter {
         ctx.writeAndFlush(ResponseEnum.CWD_SUCCESS.toString());
     }
 
+    private void checkMode(ChannelHandlerContext ctx) throws InterruptedException {
+
+        FtpSession session = ClientSupervise.getSession(ctx.channel().id());
+        // 判断是否打开PORT模式
+        if ( session.getMode() == FtpSession.PORT_MODE){
+            // 判断用户是否已经准备好传输
+            if (session.getFtpState().getState() < FtpState.READY_TRANSFORM) {
+                ctx.writeAndFlush(ResponseEnum.UNIDENTIFY_CONNECTION.toString());
+                return;
+            }
+
+            // 当用户的传输模式为PASV
+        } else {
+
+            // 用于计数，防止死循环卡死
+            int count = 0;
+            // 判断用户是否准备好PASV模式的连接
+            while (session.getFtpState().getState() != FtpState.READY_TRANSFORM) {
+                if( count > 10 ){
+                    ctx.writeAndFlush(ResponseEnum.UNIDENTIFY_CONNECTION.toString());
+                    return;
+                }
+                Thread.sleep(100);
+                count++;
+            }
+
+        }
+    }
 }
