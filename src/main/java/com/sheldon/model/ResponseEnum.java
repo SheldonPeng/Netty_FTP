@@ -6,7 +6,7 @@ public enum ResponseEnum {
     OPTS_SUCCESS_OK("200", "OPTS UTF8 command success"),
     PORT_OK("200", "Port is ok"),
     NOOP_OK("200","NOOP command successful."),
-    TYPE_SUCCESS("200","200 Type set to "),
+    TYPE_SUCCESS("200","Type set to "),
     SIZE_ACCEPT("213","{}"),
     CONN_SUCCESS_WC("220", "Power by SheldonPeng"),
     TRANSFER_COMPLETE("226", "Transfer complete,Closing data connection"),

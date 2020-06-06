@@ -48,7 +48,7 @@ public class ByteBufUtil {
 
             FileChannel fileChannel = (FileChannel)data;
             fileChannel.write(byteBuf.nioBuffer());
-            System.out.println(fileChannel.size());
+
         }
 
 

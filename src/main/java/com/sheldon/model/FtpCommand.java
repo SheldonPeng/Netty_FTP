@@ -46,10 +46,18 @@ public class FtpCommand implements Serializable {
         }
 
         this.requestEnum = RequestEnum.getCommand(splitMsg[0]);
+
         // 读取参数,并将其注入命令中
         params = new ArrayList<>();
-        this.params.addAll(Arrays.asList(splitMsg)
-                   .subList(1, splitMsg.length));
+        if ( requestEnum.equals(RequestEnum.OPTS)){
+            this.params.addAll(Arrays.asList(splitMsg)
+                    .subList(1, splitMsg.length));
+        } else {
+            this.params.add(message.toString().replace(splitMsg[0]+" ",""));
+        }
+
+
+
 
     }
 }
