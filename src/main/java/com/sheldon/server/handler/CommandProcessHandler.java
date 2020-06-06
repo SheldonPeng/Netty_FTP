@@ -19,12 +19,10 @@ import lombok.extern.log4j.Log4j2;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.RandomAccessFile;
+import java.io.*;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.nio.channels.FileChannel;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Random;
@@ -327,9 +325,11 @@ public class CommandProcessHandler extends ChannelInboundHandlerAdapter {
         ctx.writeAndFlush(ResponseEnum.DATA_CONNECTION_OK.toString());
 
         // 采用零拷贝的方式写回客户端
-        RandomAccessFile randomAccessFile = new RandomAccessFile(file, "rw");
-        FileRegion fileRegion = new DefaultFileRegion(randomAccessFile.getChannel(), 0, randomAccessFile.length());
-        session.getCtx().writeAndFlush(fileRegion);
+        //RandomAccessFile randomAccessFile = new RandomAccessFile(file, "rw");
+        FileInputStream fileInputStream = new FileInputStream(file);
+        FileChannel channel = fileInputStream.getChannel();
+        FileRegion fileRegion = new DefaultFileRegion(channel, 0, file.length());
+        session.getCtx().writeAndFlush(fileRegion).sync().get();
 
         //  关闭数据客户端，并且告知客户端数据端口已被关闭
         session.getCtx().close().sync().get();

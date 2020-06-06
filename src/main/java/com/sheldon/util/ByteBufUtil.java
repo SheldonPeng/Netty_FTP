@@ -9,10 +9,7 @@ import io.netty.channel.DefaultFileRegion;
 import io.netty.channel.FileRegion;
 import lombok.extern.log4j.Log4j2;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.io.RandomAccessFile;
+import java.io.*;
 import java.nio.channels.FileChannel;
 import java.nio.charset.StandardCharsets;
 
@@ -39,16 +36,19 @@ public class ByteBufUtil {
         if ( data instanceof File){
 
             File file = (File) data;
-            RandomAccessFile accessFile = new RandomAccessFile(file,"rw");
-            accessFile.seek(accessFile.length());
+            FileOutputStream fileOutputStream = new FileOutputStream(file);
+            FileChannel channel = fileOutputStream.getChannel();
+            //RandomAccessFile accessFile = new RandomAccessFile(file,"rw");
 
-            FileChannel channel = accessFile.getChannel();
+            //FileChannel channel = accessFile.getChannel();
             channel.write(byteBuf.nioBuffer());
+
             session.getFtpState().setData(channel);
         } else if(data instanceof FileChannel){
 
             FileChannel fileChannel = (FileChannel)data;
             fileChannel.write(byteBuf.nioBuffer());
+            System.out.println(fileChannel.size());
         }
 
 
